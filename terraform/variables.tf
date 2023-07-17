@@ -1,37 +1,4 @@
-variable "availabilityZone" {
-     default = "eu-west-3a"
-}
-variable "instanceTenancy" {
-    default = "default"
-}
-variable "dnsSupport" {
-    default = true
-}
-variable "dnsHostNames" {
-    default = true
-}
-variable "vpcCIDRblock" {
-    default = "10.0.0.0/16"
-}
-variable "subnetCIDRblock" {
-    default = "10.0.1.0/24"
-}
-variable "destinationCIDRblock" {
-    default = "0.0.0.0/0"
-}
-variable "ingressCIDRblock" {
-    type = list
-    default = [ "0.0.0.0/0" ]
-}
-variable "egressCIDRblock" {
-    type = list
-    default = [ "0.0.0.0/0" ]
-}
-variable "mapPublicIP" {
-    default = true
-}
 
-#==========
 variable "region" {
   description = "The region for VPC"
   type        = string
@@ -49,11 +16,10 @@ variable "availability_zones" {
   type        = list(string)
   default     = []
 }
-
 variable "vpc_cidr_block" {
-  description = "The IP address range of the VPC in CIDR notation"
+  description = "CIDR block for the VPC"
   type        = string
-  default     = ""
+  default     = "" # Replace with your desired CIDR block
 }
 
 variable "vpc_name" {
@@ -61,6 +27,7 @@ variable "vpc_name" {
   type        = string
   default     = ""
 }
+
 
 
 variable "private_subnets" {
@@ -79,6 +46,7 @@ variable "public_subnets" {
 variable "db_name" {
   description = "Postgres database name"
   type        = string
+  default     = ""
 }
 
 variable "database_subnets" {
