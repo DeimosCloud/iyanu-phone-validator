@@ -1,0 +1,8 @@
+[loadbalancer]
+
+ec2-15-237-178-79.eu-west-3.compute.amazonaws.com ansible_ssh_private_key_file=/etc/ansible/lb-jumia-phone-validator.pem
+
+[microservice]
+
+ec2-35-180-247-143.eu-west-3.compute.amazonaws.com ansible_ssh_private_key_file=/etc/ansible/application-jumia-phone-validator.pem
+

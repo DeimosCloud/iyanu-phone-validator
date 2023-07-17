@@ -244,8 +244,6 @@ module "load_balancer" {
               sudo chkconfig nginx on
               sudo apt update -y
               sudo apt install python3-pip -y
-              sudo sed -i 's/#Port 22/Port 1337/' /etc/ssh/sshd_config
-              sudo service sshd restart
               EOF
 
 
@@ -283,7 +281,6 @@ module "Application" {
               sudo chkconfig docker on
               sudo apt update -y
               sudo apt install python3-pip -y
-              sudo service sshd restart
               EOF
 
   tags = merge (
