@@ -94,6 +94,11 @@ module "lb_security_group" {
       protocol    = "tcp"
       cidr_blocks = "0.0.0.0/0"
     },
+     {
+      description = "Allow HTTPS"
+      rule        = "ssh-tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
   ]
 
   egress_with_cidr_blocks = [
@@ -139,6 +144,12 @@ module "application_security_group" {
       protocol    = "tcp"
       cidr_blocks = "0.0.0.0/0"
     },
+     {
+      description = "Allow HTTPS"
+      rule        = "ssh-tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+
   ]
 
   egress_with_cidr_blocks = [
@@ -227,13 +238,12 @@ module "load_balancer" {
   associate_public_ip_address = true
   user_data = <<-EOF
               #!/bin/bash
-              sudo yum update -y
-              sudo yum install nginx -y
+              sudo apt update -y
+              sudo apt install nginx -y
               sudo service nginx start
               sudo chkconfig nginx on
-              sudo yum update -y
-              sudo yum install python3-pip -y
-
+              sudo apt update -y
+              sudo apt install python3-pip -y
               sudo sed -i 's/#Port 22/Port 1337/' /etc/ssh/sshd_config
               sudo service sshd restart
               EOF
@@ -263,18 +273,16 @@ module "Application" {
   monitoring             = true
   vpc_security_group_ids = [module.application_security_group.security_group_id]
   subnet_id              = module.vpc.public_subnets[0]
+  associate_public_ip_address = true
   user_data = <<-EOF
               #!/bin/bash
-              sudo yum update -y
-              sudo yum install docker -y
+              sudo apt update -y
+              sudo apt install docker -y
               sudo service docker start
               sudo usermod -a -G docker ec2-user
               sudo chkconfig docker on
-              sudo yum update -y
-              sudo yum install python3-pip -y
-
-            
-              sudo sed -i 's/#Port 22/Port 1337/' /etc/ssh/sshd_config
+              sudo apt update -y
+              sudo apt install python3-pip -y
               sudo service sshd restart
               EOF
 
@@ -302,13 +310,13 @@ module "ansible_controller" {
   associate_public_ip_address = true
   user_data = <<-EOF
               #!/bin/bash
-              sudo yum update -y
-              sudo yum install python3-pip -y
+              sudo apt update
+              sudo apt install python3-pip -y
               python3 -m pip install
               sudo apt update 
               sudo apt-add-repository -y ppa:ansible/ansible
-              sudo apt-get update
-              sudo apt-get install ansible
+              sudo apt update
+              sudo apt-get install -y ansible
               EOF
 
   tags = merge (
