@@ -1,11 +1,17 @@
 version: '2'
 services:
-    backend:
-         image: 992122884453.dkr.ecr.us-east-1.amazonaws.com/validator-backend
+    frontend:
+         image: validator-frontend
+         build:
+          context: validator-frontend
+          dockerfile: ../validator-frontend/Dockerfile
          ports:
            - "8080:8080"
        
-    frontend:
-         image: 992122884453.dkr.ecr.us-east-1.amazonaws.com/validator-frontend
+    backend:
+         image: validator-backend
+         build:
+          context: validator-backend
+          dockerfile: ../validator-backend/Dockerfile
          ports:
-            - 8081:8081
+           - "8080:8080"

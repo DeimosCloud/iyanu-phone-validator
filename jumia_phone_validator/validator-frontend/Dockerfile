@@ -9,16 +9,20 @@
 
 # CMD ["npm", "run", "start"]
 
-FROM node:17-alpine
+
+FROM node:16.3.0-alpine AS build
 
 WORKDIR /validator-frontend
+COPY . .
 
- COPY package.json .
+RUN npm install 
+RUN npm run build
 
- RUN npm install
+FROM nginx:1.23
 
- COPY . .
+COPY --from=build /validator-frontend/build  /usr/share/nginx/html
 
- EXPOSE 8081
 
- CMD ["npm", "start"]
+EXPOSE 8081
+
+CMD ["nginx", "-g", "daemon off;"]
