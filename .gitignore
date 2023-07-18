@@ -27,3 +27,4 @@ override.tf.json
 terraform.rc
 **/keys/*
 *.pem
+.DS_Store
