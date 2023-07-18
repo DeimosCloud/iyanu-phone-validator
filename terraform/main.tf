@@ -4,8 +4,9 @@
 
 
 locals {
-
-  common_labels = {
+  ssh_user        = "ubuntu"
+  application_private_key_path =  "../ansible/keys/application-jumia-phone-validator.pem"
+    common_labels = {
 
     environment = var.environment
     managed_by  = "terraform"
@@ -223,32 +224,14 @@ module "ansible_controller_security_group" {
   #Servers
 #-------------------------
 
-module "load_balancer" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 3.0"
-
-  name = var.load_balancer
-
-  ami                    = var.linux_ami
-  instance_type          = var.linux_instance_type
-  key_name               = "lb-jumia-phone-validator"
-  monitoring             = true
-  vpc_security_group_ids = [module.lb_security_group.security_group_id]
-  subnet_id              =  module.vpc.public_subnets[0]
+resource "aws_instance" "Loabalancer" {
+  ami                         = var.linux_ami
+  subnet_id                   = module.vpc.public_subnets[0]
+  instance_type               = var.linux_instance_type
   associate_public_ip_address = true
-  private_ip = "10.10.4.194"
-  user_data = <<-EOF
-              #!/bin/bash
-              sudo apt update -y
-              sudo apt install nginx -y
-              sudo service nginx start
-              sudo chkconfig nginx on
-              sudo apt update -y
-              sudo apt install python3-pip -y
-              EOF
-
-
- tags = merge (
+  security_groups             = [module.lb_security_group.security_group_id]
+  key_name                    = "lb-jumia-phone-validator"
+  tags = merge (
     local.common_labels,
     {
       Name = "load_balancer"
@@ -260,71 +243,52 @@ module "load_balancer" {
 #   Application Servers
 #-------------------------
 
-module "Application" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 3.0"
-
-  name = var.microservice
-
-  ami                    = var.linux_ami
-  instance_type          = var.linux_instance_type
-  key_name               = "application-jumia-phone-validator"
-  monitoring             = true
-  vpc_security_group_ids = [module.application_security_group.security_group_id]
-  subnet_id              = module.vpc.public_subnets[0]
+resource "aws_instance" "application" {
+  ami                         = var.linux_ami
+  subnet_id                   = module.vpc.public_subnets[0]
+  instance_type               = var.linux_instance_type
   associate_public_ip_address = true
-  private_ip = "10.10.4.22"
-  user_data = <<-EOF
-              #!/bin/bash
-              sudo apt update -y
-              sudo apt  install docker.io 
-              sudo service docker start
-              sudo usermod -a -G docker ec2-user
-              sudo chkconfig docker on
-              sudo apt update -y
-              sudo apt install python3-pip -y
-              EOF
-
+  security_groups             = [module.application_security_group.security_group_id]
+  key_name                    = "application-jumia-phone-validator"
   tags = merge (
     local.common_labels,
     {
       Name = "application"
     }
-  )
+ )
+
+
+  provisioner "remote-exec" {
+    inline = ["echo 'Wait until SSH is ready'"]
+
+    connection {
+      type        = "ssh"
+      user        = local.ssh_user
+      private_key = file(local.application_private_key_path)
+      host        = aws_instance.application.public_ip
+    }
+  }
+  provisioner "local-exec" {
+    command = "ansible-playbook  -i ${aws_instance.application.public_ip}, --private-key ${local.application_private_key_path} nginx.yaml"
+  }
 }
 
 
-module "ansible_controller" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 3.0"
 
-  name = var.ansible_master
 
-  ami                    = var.linux_ami
-  instance_type          = var.linux_instance_type
-  key_name               = "ansible-controller"
-  monitoring             = true
-  vpc_security_group_ids = [module.ansible_controller_security_group.security_group_id]
-  subnet_id              = module.vpc.public_subnets[1]
+resource "aws_instance" "Ansible_controller" {
+  ami                         = var.linux_ami
+  subnet_id                   = module.vpc.public_subnets[1]
+  instance_type               = var.linux_instance_type
   associate_public_ip_address = true
-  private_ip = "10.10.5.70"
-  user_data = <<-EOF
-              #!/bin/bash
-              sudo apt update
-              sudo apt install python3-pip -y
-              python3 -m pip install
-              sudo apt update 
-              sudo apt-add-repository -y ppa:ansible/ansible
-              sudo apt update
-              sudo apt-get install -y ansible
-              EOF
-
+  security_groups             = [module.ansible_controller_security_group.security_group_id]
+  key_name                    = "ansible-controller"
   tags = merge (
     local.common_labels,
     {
-      Name = "master-node"
+      Name = "ansible"
     }
-  )
+ )
 }
 
 
@@ -372,46 +336,78 @@ resource "aws_kms_key" "db_secret" {
 #FOR AUTOMATION OF ANSIBLE WITH TERRAFORM
 #for Ansible Dynamic Inventory Creation
 
-resource "null_resource" "loadbalancer" {
+# resource "null_resource" "loadbalancer" {
 
-	triggers = {
-		#mytest = timestamp()
-	}
+# 	triggers = {
+# 		#mytest = timestamp()
+# 	}
 
-	provisioner "local-exec" {
-	    command = "echo ${module.load_balancer.id} ansible_host=${module.load_balancer.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=ansible/keys/ansible/keys/lb-jumia-phone-validator.pem >> inventory"
+# 	provisioner "local-exec" {
+# 	    command = "echo ${module.load_balancer.id} ansible_host=${module.load_balancer.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=../ansible/keys/ansible/keys/lb-jumia-phone-validator.pem >> inventory"        
+           
+# 	  }
+# }
+
+# resource "null_resource" "application" {
+
+# 	triggers = {
+# 		#mytest = timestamp()
+# 	}
+
+# 	provisioner "local-exec" {
+# 	    command = "echo ${module.Application.id} ansible_host=${module.Application.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=../ansible/keys/application-jumia-phone-validator.pem >> inventory"
             
            
-	  }
-}
+# 	  }
+# }
 
-resource "null_resource" "application" {
+# #Copy Dynamic inventory from local Workstation to the Ansible Server
 
-	triggers = {
-		#mytest = timestamp()
-	}
+# resource "null_resource" "dynamicinventory" {
 
-	provisioner "local-exec" {
-	    command = "echo ${module.Application.id} ansible_host=${module.Application.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=ansible/keys/application-jumia-phone-validator.pem >> inventory"
+# 	triggers = {
+# 		# mytest = timestamp()
+# 	}
+
+# 	provisioner "local-exec" {
+# 	    command = "scp -i ../ansible/keys/ansible-controller.pem inventory ubuntu@15.237.58.75:/tmp"
+      
             
-           
-	  }
-}
+# 	  }
+# 	depends_on = [ 
+# 			null_resource.application , null_resource.loadbalancer
+# 			]
+# }
 
-#Copy Dynamic inventory from local Workstation to the Ansible Server
+# #Login Remotely to the Ansible Server and and move the file to your own Custom Inventory location
+#  resource "null_resource" "ssh3" {
+#   provisioner "remote-exec" {
+#     connection {
+#       type        = "ssh"
+#       host        = module.ansible_controller.public_ip
+#       user        = "ubuntu"
+#       private_key = file("../ansible/keys/ansible-controller.pem")
+#     }
 
-resource "null_resource" "dynamicinventory" {
+#     inline = [
+#       # Remote-exec commands here
+#               "sudo chmod 777 /tmp/inventory",
+#               "sudo mv /tmp/inventory /etc/ansible/inventory",
+#     ]
+#   }
 
-	triggers = {
-		mytest = timestamp()
-	}
+#   #To RUN PLAYBOOK
+# 	# provisioner "local-exec" {
+# 	#   command = "ansible-playbook  -i ${module.ansible_controller.public_ip}, --private-key ${file("../ansible/keys/ansible-controller.pem")} nginx.yaml"
+              
+# 	#   }
 
-	provisioner "local-exec" {
-	    command = "scp -i ../ansible/keys/ansible-controller.pem  inventory ubuntu@15.237.115.153:/tmp/"
+# # meta argument
+# 	depends_on = [ 
+# 			null_resource.application , null_resource.loadbalancer
+# 			]
+# }
 
-            
-	  }
-	depends_on = [ 
-			null_resource.application , null_resource.loadbalancer
-			]
-}
+
+
+

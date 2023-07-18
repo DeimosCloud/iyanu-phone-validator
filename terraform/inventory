@@ -1,2 +1,2 @@
-i-0eb9104243074befc ansible_host=13.38.47.228 ansible_user=ubuntu ansible_ssh_private_key_file=ansible/keys/application-jumia-phone-validator.pem
-i-06570a436591efe0f ansible_host=15.237.178.79 ansible_user=ubuntu ansible_ssh_private_key_file=ansible/keys/ansible/keys/lb-jumia-phone-validator.pem
+i-0ba48c1d4da04d79e ansible_host=35.180.229.203 ansible_user=ubuntu ansible_ssh_private_key_file=../ansible/keys/ansible/keys/lb-jumia-phone-validator.pem
+i-07d38166ada11666a ansible_host=35.180.121.121 ansible_user=ubuntu ansible_ssh_private_key_file=../ansible/keys/application-jumia-phone-validator.pem
