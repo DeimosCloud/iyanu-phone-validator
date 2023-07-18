@@ -5,7 +5,8 @@
 
 locals {
   ssh_user        = "ubuntu"
-  application_private_key_path =  "../ansible/keys/application-jumia-phone-validator.pem"
+  private_key_path =  "../ansible/keys/application-jumia-phone-validator.pem"
+  loabalancer_private_key_path = "../ansible/keys/lb-jumia-phone-validator.pem"
     common_labels = {
 
     environment = var.environment
@@ -167,56 +168,6 @@ module "application_security_group" {
   tags = local.common_labels
 }
 
-#-------------------------
-#   Ansible master SG
-#-------------------------
-module "ansible_controller_security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-
-  name        = "Ansible-SG"
-  description = "ansible master security group"
-  vpc_id      = module.vpc.vpc_id
-
-  # ingress
-  ingress_with_cidr_blocks = [
-    {
-      description = "Allow HTTPS"
-      rule        = "https-443-tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-    {
-      description = "Allow HTTPS"
-      rule        = "http-80-tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-    {
-      description = "Allow Port 1337"
-      from_port   = 1337
-      to_port     = 1337
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-     {
-      description = "Allow HTTPS"
-      rule        = "ssh-tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-  ]
-
-  egress_with_cidr_blocks = [
-    {
-      description = "Deny all outgoing traffic"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = "0.0.0.0/0"
-    },
-
-  ]
-  tags = local.common_labels
-}
-
 
 #For SERVERS
 
@@ -224,7 +175,7 @@ module "ansible_controller_security_group" {
   #Servers
 #-------------------------
 
-resource "aws_instance" "Loabalancer" {
+resource "aws_instance" "loabalancer" {
   ami                         = var.linux_ami
   subnet_id                   = module.vpc.public_subnets[0]
   instance_type               = var.linux_instance_type
@@ -238,6 +189,24 @@ resource "aws_instance" "Loabalancer" {
     }
  )
 }
+
+resource "null_resource" "loadbalancer_server" {
+    triggers = {
+      trigger = aws_instance.loabalancer.public_ip
+    }
+    provisioner "local-exec" {
+     command = "ansible-playbook --inventory ${aws_instance.loabalancer.public_ip}, --private-key ../ansible/keys/lb-jumia-phone-validator.pem --user ubuntu servers.yaml"
+     }
+}
+
+# resource "null_resource" "loabalancer_server" {
+#     triggers = {
+#       trigger = aws_instance.loabalancer.public_ip
+#     }
+#     provisioner "local-exec" {
+#       command = "ansible-playbook --inventory ${aws_instance.loabalancer.public_ip}, --private-key ${local.loabalancer_private_key_path} --user ubuntu servers.yaml"
+#     }
+#   }
 
 #-------------------------
 #   Application Servers
@@ -264,32 +233,15 @@ resource "aws_instance" "application" {
     connection {
       type        = "ssh"
       user        = local.ssh_user
-      private_key = file(local.application_private_key_path)
+      private_key = file(local.private_key_path)
       host        = aws_instance.application.public_ip
     }
   }
   provisioner "local-exec" {
-    command = "ansible-playbook  -i ${aws_instance.application.public_ip}, --private-key ${local.application_private_key_path} nginx.yaml"
+    command = "ansible-playbook  --inventory ${aws_instance.application.public_ip}, --private-key ${local.loabalancer_private_key_path}} --user ubuntu servers.yaml"
   }
 }
 
-
-
-
-resource "aws_instance" "Ansible_controller" {
-  ami                         = var.linux_ami
-  subnet_id                   = module.vpc.public_subnets[1]
-  instance_type               = var.linux_instance_type
-  associate_public_ip_address = true
-  security_groups             = [module.ansible_controller_security_group.security_group_id]
-  key_name                    = "ansible-controller"
-  tags = merge (
-    local.common_labels,
-    {
-      Name = "ansible"
-    }
- )
-}
 
 
 #-------------------------
