@@ -275,7 +275,7 @@ module "Application" {
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
-              sudo apt install docker -y
+              sudo apt  install docker.io 
               sudo service docker start
               sudo usermod -a -G docker ec2-user
               sudo chkconfig docker on
