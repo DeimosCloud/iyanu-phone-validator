@@ -236,6 +236,7 @@ module "load_balancer" {
   vpc_security_group_ids = [module.lb_security_group.security_group_id]
   subnet_id              =  module.vpc.public_subnets[0]
   associate_public_ip_address = true
+  private_ip = "10.10.4.194"
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
@@ -272,6 +273,7 @@ module "Application" {
   vpc_security_group_ids = [module.application_security_group.security_group_id]
   subnet_id              = module.vpc.public_subnets[0]
   associate_public_ip_address = true
+  private_ip = "10.10.4.22"
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update -y
@@ -286,7 +288,7 @@ module "Application" {
   tags = merge (
     local.common_labels,
     {
-      Name = "microservice"
+      Name = "application"
     }
   )
 }
@@ -305,6 +307,7 @@ module "ansible_controller" {
   vpc_security_group_ids = [module.ansible_controller_security_group.security_group_id]
   subnet_id              = module.vpc.public_subnets[1]
   associate_public_ip_address = true
+  private_ip = "10.10.5.70"
   user_data = <<-EOF
               #!/bin/bash
               sudo apt update
@@ -363,4 +366,52 @@ resource "aws_kms_key" "db_secret" {
   description             = "KMS key for postgres RDS"
   deletion_window_in_days = 10
   tags                    = local.common_labels
+}
+
+
+#FOR AUTOMATION OF ANSIBLE WITH TERRAFORM
+#for Ansible Dynamic Inventory Creation
+
+resource "null_resource" "loadbalancer" {
+
+	triggers = {
+		#mytest = timestamp()
+	}
+
+	provisioner "local-exec" {
+	    command = "echo ${module.load_balancer.id} ansible_host=${module.load_balancer.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=ansible/keys/ansible/keys/lb-jumia-phone-validator.pem >> inventory"
+            
+           
+	  }
+}
+
+resource "null_resource" "application" {
+
+	triggers = {
+		#mytest = timestamp()
+	}
+
+	provisioner "local-exec" {
+	    command = "echo ${module.Application.id} ansible_host=${module.Application.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=ansible/keys/application-jumia-phone-validator.pem >> inventory"
+            
+           
+	  }
+}
+
+#Copy Dynamic inventory from local Workstation to the Ansible Server
+
+resource "null_resource" "dynamicinventory" {
+
+	triggers = {
+		mytest = timestamp()
+	}
+
+	provisioner "local-exec" {
+	    command = "scp -i ../ansible/keys/ansible-controller.pem  inventory ubuntu@15.237.115.153:/tmp/"
+
+            
+	  }
+	depends_on = [ 
+			null_resource.application , null_resource.loadbalancer
+			]
 }
