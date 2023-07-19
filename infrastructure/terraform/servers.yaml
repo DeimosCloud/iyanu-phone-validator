@@ -54,6 +54,10 @@
       community.general.ufw:
         rule: allow
         name: OpenSSH
+    - name: UFW - Allow Http connections
+      community.general.ufw:
+        rule: allow
+        name: HTTP
 
     - name: UFW - Enable and deny by default
       community.general.ufw:

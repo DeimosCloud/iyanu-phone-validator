@@ -46,3 +46,4 @@ target/
 !**/src/test/**/target/
 **/database/*
 terraform.tfstate
+postgresql/data

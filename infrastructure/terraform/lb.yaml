@@ -59,6 +59,10 @@
       community.general.ufw:
         state: enabled
         default: deny
+    - name: UFW - Allow Http connections
+      community.general.ufw:
+        rule: allow
+        name: HTTP
     - name: Ensure Nginx is at the latest version
       apt:
         name: nginx
