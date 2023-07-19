@@ -1,0 +1,64 @@
+---
+- name: Ensure Nginx is at the latest version
+  apt:
+    name: nginx
+    state: latest
+
+- name: Install aptitude
+  apt:
+    name: aptitude
+    state: latest
+    update_cache: true
+
+- name: Install required system packages
+  apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-pip
+      - virtualenv
+      - python3-setuptools
+    state: latest
+    update_cache: true
+
+- name: Add Docker GPG apt Key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Update apt and install docker-ce
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: true
+
+- name: Install Docker Module for Python
+  pip:
+    name: docker
+
+- name: Make sure Nginx is running
+  systemd:
+    state: started
+    name: nginx
+
+- name: Remove default Nginx configuration
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Create Nginx load balancer configuration
+  template:
+    src: templates/load_balancer.conf.j2
+    dest: /etc/nginx/conf.d/load_balancer.conf
+
+- name: Restart Nginx
+  service:
+    name: nginx
+    state: restarted

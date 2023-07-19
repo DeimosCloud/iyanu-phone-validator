@@ -28,6 +28,7 @@ terraform.rc
 **/keys/*
 *.pem
 .DS_Store
+.tfstate
 
 ### NetBeans ###
 /nbproject/private/
@@ -44,4 +45,4 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 **/database/*
-.tfstate
+terraform.tfstate

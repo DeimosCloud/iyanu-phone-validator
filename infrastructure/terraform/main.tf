@@ -207,8 +207,9 @@ resource "null_resource" "loadbalancer_server" {
     }
   }
   provisioner "local-exec" {
-    command = "ansible-playbook --private-key=${path.module}./ansible/keys/lb-jumia-phone-validator.pem --ssh-common-args='-o StrictHostKeyChecking=no' servers.yaml -u ubuntu -i '${aws_instance.loadbalancer.public_ip},'"
-    
+    command = "ansible-playbook --private-key=${path.module}./ansible/keys/lb-jumia-phone-validator.pem --ssh-common-args='-o StrictHostKeyChecking=no' lb.yaml -u ubuntu -i '${aws_instance.loadbalancer.public_ip},'"
+    #command = "ansible-playbook --private-key=${path.module}./ansible/keys/lb-jumia-phone-validator.pem --ssh-common-args='-o StrictHostKeyChecking=no' ${path.module}./ansible/roles/firewall/tasks/main.yaml -u ubuntu -i '${aws_instance.loadbalancer.public_ip},'"
+
   }
 
 }
