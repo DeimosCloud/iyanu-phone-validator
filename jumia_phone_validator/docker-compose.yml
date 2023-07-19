@@ -1,4 +1,4 @@
-version: '2'
+version: '3.8'
 services:
     frontend:
          image: validator-frontend
@@ -6,12 +6,49 @@ services:
           context: validator-frontend
           dockerfile: ../validator-frontend/Dockerfile
          ports:
-           - "8080:8080"
+           - "8081:80"
+         depends_on:
+           - backend
+         networks:
+           - validator
        
     backend:
          image: validator-backend
          build:
-          context: validator-backend
-          dockerfile: ../validator-backend/Dockerfile
+            context: validator-backend
+            dockerfile: Dockerfile
          ports:
-           - "8080:8080"
+            - "8080:8080"
+         depends_on:
+            - db
+         environment:
+            DB_HOST: db
+            DB_PORT: 5432
+            DB_NAME: validator_backend
+            DB_USERNAME: validator_user
+            DB_PASSWORD: validator_password
+         networks:
+            - validator
+    db:
+        image: postgres:14-alpine
+        volumes:
+            # Maps the database data to a directory on the host so it is persisted
+            # See: https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata
+            - ./database/postgresql/data:/var/lib/postgresql/data
+            # Maps the init script to a directory on the host so the init scripts are picked up
+            # See: https://github.com/docker-library/docs/blob/master/postgres/README.md#initialization-scripts
+            - ./database/postgresql/initdb:/docker-entrypoint-initdb.d
+        ports:
+            - "5433:5432"
+        environment:
+            PG_DATA: /var/lib/postgresql/data/pgdata
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            VALIDATOR_DB: validator_backend
+            VALIDATOR_USER: validator_user
+            VALIDATOR_PASSWORD: validator_password
+        networks:
+            - validator
+
+networks:
+    validator:

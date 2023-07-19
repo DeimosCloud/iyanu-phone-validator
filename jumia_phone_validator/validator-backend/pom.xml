@@ -15,8 +15,8 @@
 	<description>Phone numbers validator project using Spring Boot to validate customers' phone numbers</description>
 	<properties>
 		<java.version>1.8</java.version>
-		<mapstruct.version>1.3.1.Final</mapstruct.version>
-		<lombok.version>1.18.12</lombok.version>
+		<mapstruct.version>1.4.2.Final</mapstruct.version>
+		<lombok.version>1.18.22</lombok.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -68,7 +68,7 @@
 		<dependency>
 			<groupId>org.mapstruct</groupId>
 			<artifactId>mapstruct</artifactId>
-			<version>1.3.1.Final</version>
+			<version>${mapstruct.version}</version>
 		</dependency>
 
 		<dependency>
@@ -116,14 +116,14 @@
 					<target>1.8</target>
 					<annotationProcessorPaths>
 						<path>
-							<groupId>org.mapstruct</groupId>
-							<artifactId>mapstruct-processor</artifactId>
-							<version>${mapstruct.version}</version>
-						</path>
-						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 							<version>${lombok.version}</version>
+						</path>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>${mapstruct.version}</version>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
