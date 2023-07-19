@@ -2,17 +2,86 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - master
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - master
+
+env:
+  TF_PATH: infrastructure/terraform
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.4.6
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_PATH }}
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_PATH }}
+        run: terraform validate -no-color
+
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_PATH }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_PATH }}
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      - name: Create Pull request comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v6
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const output = `### Terraform Plan  :book:\`${{ steps.plan.outcome }}\`\n[ *Root Module*: **\`${{ env.TF_PATH }}\`** ]
+
+            <details><summary>Show Plan Details</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`\n
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*
+
+            <!-- auto-generated pr comment -->`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: ${{ steps.plan.outcome != 'success' }}
+        run: exit 1
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_PATH }}
+        run: terraform apply -auto-approve -no-color -input=false

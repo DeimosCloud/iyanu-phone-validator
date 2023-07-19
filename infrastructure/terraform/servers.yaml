@@ -64,10 +64,6 @@
       community.general.ufw:
         state: enabled
         default: deny
-    - name: Ensure Nginx is at the latest version
-      apt:
-        name: nginx
-        state: latest
 
     - name: Install aptitude
       apt:
@@ -118,31 +114,17 @@
         repo: https://github.com/DeimosCloud/iyanu-phone-validator.git
         dest: /opt/app
 
-    # - name: Build and run the Docker container
-    #   command: docker run  -f /opt/app/jumia_phone_validator/Dockerfile -p port
-    - name: Set up Nginx configuration
-      template:
-        src: templates/nginx.conf.j2
-        dest: /etc/nginx/nginx.conf
-        
     - name: Build and run the Docker container
-      command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose.yml up -d
+      command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose-test.yml up -d
 
-    - name: show running images
-      shell: docker images
+    - name: "install httpd"
+      package:
+       name: "apache2"
+       state: present
 
-    - name: Make sure Nginx is running
-      systemd:
-        state: started
-        name: nginx
-
-  
-
-    - name: Remove default Nginx configuration
-      file:
-        path: /etc/nginx/sites-enabled/default
-        state: absent
-    - name: Restart Nginx
+    - name: "restart httpd"
       service:
-        name: nginx
-        state: restarted
+       name: "apache2"
+       state: started
+
+    

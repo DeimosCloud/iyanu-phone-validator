@@ -64,11 +64,11 @@
         rule: allow
         port: '80'
         proto: tcp
-        
-    - name: Ensure Nginx is at the latest version
-      apt:
-        name: nginx
-        state: latest
+
+    # - name: Ensure Nginx is at the latest version
+    #   apt:
+    #     name: nginx
+    #     state: latest
 
     - name: Install aptitude
       apt:
@@ -109,22 +109,25 @@
         - docker-ce-cli
         - containerd.io
 
-    - name: Make sure Nginx is running
-      systemd:
-        state: started
-        name: nginx
+    - name: Install haproxy software
+      package:
+       name: "haproxy"
+       state: present
 
-    - name: Remove default Nginx configuration
-      file:
-        path: /etc/nginx/sites-enabled/default
-        state: absent
+    - name: Copying my own configuration filex
+      copy:
+        src: "templates/haproxy.cfg.j2"
+        dest: "/etc/haproxy/haproxy.cfg"
+        mode: "0644"
+        #notify: restart lbserver
 
-    # - name: Create Nginx load balancer configuration
-    #   template:
-    #     src: templates/load_balancer.conf.j2
-    #     dest: /etc/nginx/conf.d/load_balancer.conf
-
-    - name: Restart Nginx
+    - name: starting load balancer service
       service:
-        name: nginx
+       name: "haproxy"
+       state: started
+
+  handlers:
+    - name: Restart HAProxy
+      systemd:
+        name: haproxy
         state: restarted

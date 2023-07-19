@@ -180,6 +180,7 @@ resource "aws_instance" "loadbalancer" {
   associate_public_ip_address = true
   security_groups             = [module.lb_security_group.security_group_id]
   key_name                    = "lb-jumia-phone-validator"
+  private_ip                 = "10.10.4.40"
   tags = merge (
     local.common_labels,
     {
@@ -226,6 +227,7 @@ resource "aws_instance" "application" {
   associate_public_ip_address = true
   security_groups             = [module.application_security_group.security_group_id]
   key_name                    = "application-jumia-phone-validator"
+  private_ip                 = "10.10.4.125"
   tags = merge (
     local.common_labels,
     {
@@ -271,6 +273,7 @@ resource "aws_instance" "ansible_master" {
   associate_public_ip_address = true
   security_groups             = [module.lb_security_group.security_group_id]
   key_name                    = "ansible-controller"
+  private_ip                 = "10.10.4.60"
   tags = merge (
     local.common_labels,
     {
