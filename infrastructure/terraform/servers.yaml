@@ -54,10 +54,11 @@
       community.general.ufw:
         rule: allow
         name: OpenSSH
-    - name: UFW - Allow Http connections
+    - name: Allow all access to tcp port 80
       community.general.ufw:
         rule: allow
-        name: HTTP
+        port: '80'
+        proto: tcp
 
     - name: UFW - Enable and deny by default
       community.general.ufw:
@@ -117,6 +118,13 @@
         repo: https://github.com/DeimosCloud/iyanu-phone-validator.git
         dest: /opt/app
 
+    # - name: Build and run the Docker container
+    #   command: docker run  -f /opt/app/jumia_phone_validator/Dockerfile -p port
+    - name: Set up Nginx configuration
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        
     - name: Build and run the Docker container
       command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose.yml up -d
 
@@ -127,6 +135,8 @@
       systemd:
         state: started
         name: nginx
+
+  
 
     - name: Remove default Nginx configuration
       file:

@@ -59,10 +59,12 @@
       community.general.ufw:
         state: enabled
         default: deny
-    - name: UFW - Allow Http connections
+    - name: Allow all access to tcp port 80
       community.general.ufw:
         rule: allow
-        name: HTTP
+        port: '80'
+        proto: tcp
+        
     - name: Ensure Nginx is at the latest version
       apt:
         name: nginx

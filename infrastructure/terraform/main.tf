@@ -132,7 +132,7 @@ module "application_security_group" {
       cidr_blocks = "0.0.0.0/0"
     },
     {
-      description = "Allow HTTPS"
+      description = "Allow HTTP"
       rule        = "http-80-tcp"
       cidr_blocks = "0.0.0.0/0"
     },
