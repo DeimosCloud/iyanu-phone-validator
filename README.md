@@ -15,7 +15,7 @@
 - Connect with an AWS user
 - CLI Access through Access key ID and Secret Access key
 
-# For this task i used configure AWS ACCESS with CLI Access through Access key ID and Secret Access key
+ For this task i used configure AWS ACCESS with CLI Access through Access key ID and Secret Access key
 
 - aws configure
 
@@ -35,9 +35,13 @@
 
 - Create an AWS EC2 Instance with Terraform
 
-- Configure Inventory file to connect to AWS EC2 Instance
+- Configure Inventory file using ansible to connect to AWS EC2 Instance
 
 - Install Docker and docker-compose
 
 - Copy docker-compose file to the server
 
+## Create an AWS EC2 Instance with Terraform
+
+- You can access the Terraform file [here]https://github.com/DeimosCloud/iyanu-phone-validator/tree/main/infrastructure/terraform
+- Create your own "terraform.tfvars" file and include the following:
