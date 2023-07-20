@@ -1,7 +1,14 @@
 ---
 - hosts: all
   become: yes
-  tasks:
+
+  pre_tasks:
+    - name: Install postgresql
+      apt:
+       name: postgresql-14
+       update_cache: yes
+      
+
     - name: Install required packages
       apt:
         name:
@@ -10,35 +17,44 @@
           - acl
         state: latest
 
-    - name: Install postgresql
-      apt:
-       name: postgresql14-server
-       update_cache: yes
-
-    - name: "Find out if PostgreSQL is initialized"
+    - name: Check if PostgreSQL is initialized
       ansible.builtin.stat:
-        path: "/var/lib/pgsql/14/data/pg_hba.conf"
-      register: result
+        path: "/etc/postgresql/14/main/pg_hba.conf"
+      register: postgres_data
 
-    - name: "Initialize PostgreSQL"
-      shell: /usr/pgsql-14/bin/postgresql-14-setup initdb
+    - name: Empty data dir
+      ansible.builtin.file:
+        path: "/etc/postgresql/14/main/"
+        state: absent
       when: not postgres_data.stat.exists
- #note this
-    - name: "Start and enable services"
-      service: 
-        name: postgresql-14
-        state: started
 
-    - name: "Start and enable services"
-      service: 
-        name: postgresql-14
-        state: started
+    - name: Initialize PostgreSQL
+      ansible.builtin.shell: "/usr/lib/postgresql/14/bin/initdb -D /etc/postgresql/14/main/"
+      become: true
+      become_user: postgres
+      when: not postgres_data.stat.exists
+    
+    # - name: "Initialize PostgreSQL"
+    #   shell: /usr/lib/postgresql/14/bin/postgresql-14-setup initdb
+    #   when: not postgres_data.stat.exists
 
-    - name: Allow PostgreSQL database service
-      firewalld:
-        service: postgresql
-        permanent: yes
-        state: enabled
+
+    - name: Start and enable service
+      service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    # - name: "Start and enable services"
+    #   service: 
+    #     name: postgresql-14
+    #     state: started
+
+    # - name: Allow PostgreSQL database service
+    #   firewalld:
+    #     service: postgresql
+    #     permanent: yes
+    #     state: enabled
 
     - name: "Create app database"
       postgresql_db:
@@ -65,17 +81,17 @@
       become: yes
       become_user: postgres
 
-    - name: "Allow md5 connection for the db user"
-      postgresql_pg_hba:
-        dest: "~/data/pg_hba.conf"
-        contype: host
-        databases: all
-        method: md5
-        users: "jumia"
-        create: true
-      become: yes
-      become_user: postgres
-      notify: restart postgres
+    # - name: "Allow md5 connection for the db user"
+    #   postgresql_pg_hba:
+    #     dest: "/etc/postgresql/14/main/pg_hba.conf"
+    #     contype: host
+    #     databases: all
+    #     method: md5
+    #     users: "jumia"
+    #     create: true
+    #   become: yes
+    #   become_user: postgres
+    #   notify: restart postgres
  
     # - name: "Load SQL script into a variable"
     #   set_fact:
@@ -89,3 +105,5 @@
   handlers:
     - name: restart postgres
       service: name=postgresql state=restarted
+       
+

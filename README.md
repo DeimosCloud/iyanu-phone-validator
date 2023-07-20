@@ -67,7 +67,7 @@ db_username          = "jumia"
 
 ```
 
-terraform init (for initializing)
+Run `terraform init` (for initializing) and `terraform apply` to apply changes.
 
-terraform apply
+Ansible is being used for configuration management and for this challange i used ansible for severs configurations and installation of some packages.
 
