@@ -54,10 +54,11 @@
       community.general.ufw:
         rule: allow
         name: OpenSSH
-    - name: Allow all access to tcp port 80
+        
+    - name: Allow all access to tcp port 8081
       community.general.ufw:
         rule: allow
-        port: '80'
+        port: '8081'
         proto: tcp
 
     - name: UFW - Enable and deny by default
@@ -115,16 +116,16 @@
         dest: /opt/app
 
     - name: Build and run the Docker container
-      command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose-test.yml up -d
+      command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose.yml up -d
 
-    - name: "install httpd"
-      package:
-       name: "apache2"
-       state: present
+    # - name: "install httpd"
+    #   package:
+    #    name: "apache2"
+    #    state: present
 
-    - name: "restart httpd"
-      service:
-       name: "apache2"
-       state: started
+    # - name: "restart httpd"
+    #   service:
+    #    name: "apache2"
+    #    state: started
 
     

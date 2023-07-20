@@ -99,6 +99,15 @@ module "lb_security_group" {
       rule        = "ssh-tcp"
       cidr_blocks = "0.0.0.0/0"
     },
+
+    {
+      description = "Allow Port 8081"
+      from_port   = 8081
+      to_port     = 8081
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+
   ]
 
   egress_with_cidr_blocks = [
@@ -150,6 +159,14 @@ module "application_security_group" {
       cidr_blocks = "0.0.0.0/0"
     },
 
+     {
+      description = "Allow Port 8081"
+      from_port   = 8081
+      to_port     = 8081
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+
   ]
 
   egress_with_cidr_blocks = [
@@ -166,6 +183,65 @@ module "application_security_group" {
   tags = local.common_labels
 }
 
+
+# ********** Database SG**********
+module "database_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+
+  name        = "Database-SG"
+  description = "Database security group"
+  vpc_id      = module.vpc.vpc_id
+
+  # ingress
+  ingress_with_cidr_blocks = [
+    {
+      description = "Allow HTTPS"
+      rule        = "https-443-tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+    {
+      description = "Allow HTTP"
+      rule        = "http-80-tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+   
+    {
+      description = "Allow Port 1337"
+      from_port   = 1337
+      to_port     = 1337
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+     {
+      description = "Allow HTTPS"
+      rule        = "ssh-tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+
+     {
+      description = "Allow Port 5432"
+      from_port   = 5432
+      to_port     = 5432
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+
+  ]
+
+  egress_with_cidr_blocks = [
+    {
+      description = "Deny all outgoing traffic"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = "0.0.0.0/0"
+    },
+
+  ]
+
+  tags = local.common_labels
+}
 
 #For SERVERS
 
@@ -262,6 +338,54 @@ resource "null_resource" "application_server" {
 }
 
 
+###DATABASE
+
+#======
+#Ansible master
+
+#=======
+resource "aws_instance" "database" {
+  ami                         = var.linux_ami
+  subnet_id                   = module.vpc.private_subnets[0]
+  instance_type               = var.linux_instance_type
+  associate_public_ip_address = true
+  security_groups             = [module.lb_security_group.security_group_id]
+  key_name                    = "database"
+  private_ip                 = "10.10.1.167"
+  tags = merge (
+    local.common_labels,
+    {
+      Name = "Database"
+    }
+ )
+}
+
+resource "null_resource" "database_server" {
+
+  triggers = {
+    time = timestamp()
+  }
+
+#Working ansible 
+  provisioner "remote-exec" {
+    inline = ["echo 'Wait until SSH is ready'"]
+
+    connection {
+      type        = "ssh"
+      user        = local.ssh_user
+      private_key = file("${path.module}./ansible/keys/database.pem")
+      host        = aws_instance.database.public_ip
+    }
+  }
+  provisioner "local-exec" {
+    command = "ansible-playbook --private-key=${path.module}./ansible/keys/database.pem --ssh-common-args='-o StrictHostKeyChecking=no' db.yaml -u ubuntu -i '${aws_instance.database.public_ip},'"
+    
+  }
+
+}
+
+
+
 #======
 #Ansible master
 
@@ -311,45 +435,7 @@ resource "null_resource" "ansible_server" {
 
 
 
-#-------------------------
-#   POSGRES Database
-#-------------------------
 
-resource "aws_db_instance" "postgres_db" {
-  allocated_storage             = var.db_allocated_storage
-  db_name                       = var.db_name
-  engine                        = var.db_engine
-  engine_version                = var.db_engine_version
-  instance_class                = var.db_instance_class
-  username                      = var.db_username
-  multi_az                      = true
-  parameter_group_name          = aws_db_parameter_group.postgres_db.name
-  manage_master_user_password   = true
-  master_user_secret_kms_key_id = aws_kms_key.db_secret.key_id
-  db_subnet_group_name          = module.vpc.database_subnet_group
-  skip_final_snapshot           = true
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-resource "aws_db_parameter_group" "postgres_db" {
-  name   = "postgres-db-pg"
-  family = "postgres14"
-
-  parameter {
-    name  = "log_connections"
-    value = "1"
-  }
-}
-
-
-resource "aws_kms_key" "db_secret" {
-  description             = "KMS key for postgres RDS"
-  deletion_window_in_days = 10
-  tags                    = local.common_labels
-}
 
 
 #FOR AUTOMATION OF ANSIBLE WITH TERRAFORM
