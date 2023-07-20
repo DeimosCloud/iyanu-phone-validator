@@ -81,26 +81,34 @@
       become: yes
       become_user: postgres
 
-    # - name: "Allow md5 connection for the db user"
-    #   postgresql_pg_hba:
-    #     dest: "/etc/postgresql/14/main/pg_hba.conf"
-    #     contype: host
-    #     databases: all
-    #     method: md5
-    #     users: "jumia"
-    #     create: true
-    #   become: yes
-    #   become_user: postgres
-    #   notify: restart postgres
+    - name: "Allow md5 connection for the db user"
+      postgresql_pg_hba:
+        dest: "/etc/postgresql/14/main/pg_hba.conf"
+        contype: host
+        databases: all
+        method: md5
+        users: all
+        source: 10.10.4.126
+        create: true
+      become: yes
+      become_user: postgres
+      notify: restart postgres
  
     # - name: "Load SQL script into a variable"
     #   set_fact:
     #     migration_sql: "{{ lookup('file', 'database/sample.sql') }}"
 
-    # - name: "Execute script from variable"
-    #   command: "psql jumia_phone_validator -c {{ sample_sql }}"
-    #   become_user: postgres
-    #   register: sql_response_variable
+    - name: Copying sql data dump
+      copy:
+        src: "templates/sample.sql"
+        dest: "/tmp/sample.sql"
+        mode: "0644"
+
+    - name: "Execute script from variable"
+      command: "psql -d jumia_phone_validator -f /tmp/sample.sql"
+      become_user: postgres
+      register: sql_response_variable
+      notify: restart postgres
 
   handlers:
     - name: restart postgres
