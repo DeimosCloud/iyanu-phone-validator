@@ -1,12 +1,12 @@
-name: Docker Image CI
+name: Terraform infrastructure
 
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   TF_PATH: infrastructure/terraform
