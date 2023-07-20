@@ -1,4 +1,5 @@
 # iyanu-phone-validator
+# Deploy Reactjs and a Spring boot Java application on an EC2 Instance
 
 # Prerequisites
 ## AWS account with IAM credentials

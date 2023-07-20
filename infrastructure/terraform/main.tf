@@ -33,39 +33,6 @@ module "vpc" {
   #Security Group
 #-------------------------
 
-module "db_security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-  name        = "PostgreSQL-SG"
-  description = "PostgreSQL security group"
-  vpc_id      = module.vpc.vpc_id
-
-  # ingress
-  ingress_with_cidr_blocks = [
-    {
-       description = "PostgreSQL access from within VPC"
-       from_port   = 5432
-       to_port     = 5432
-       protocol    = "tcp"
-       cidr_blocks = "0.0.0.0/0"
-    },
-   
-  ]
-  egress_with_cidr_blocks = [
-    {
-      description = "Deny all outgoing traffic"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = "0.0.0.0/0"
-    },
-
-  ]
-}
-
-#   tags = local.common_labels
-# }
-
 
 module "lb_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
@@ -346,12 +313,12 @@ resource "null_resource" "application_server" {
 #=======
 resource "aws_instance" "database" {
   ami                         = var.linux_ami
-  subnet_id                   = module.vpc.private_subnets[0]
+  subnet_id                   = module.vpc.public_subnets[0]
   instance_type               = var.linux_instance_type
   associate_public_ip_address = true
-  security_groups             = [module.lb_security_group.security_group_id]
+  security_groups             = [module.database_security_group.security_group_id]
   key_name                    = "database"
-  private_ip                 = "10.10.1.167"
+  private_ip                 = "10.10.4.167"
   tags = merge (
     local.common_labels,
     {
@@ -366,7 +333,6 @@ resource "null_resource" "database_server" {
     time = timestamp()
   }
 
-#Working ansible 
   provisioner "remote-exec" {
     inline = ["echo 'Wait until SSH is ready'"]
 
@@ -397,7 +363,7 @@ resource "aws_instance" "ansible_master" {
   associate_public_ip_address = true
   security_groups             = [module.lb_security_group.security_group_id]
   key_name                    = "ansible-controller"
-  private_ip                 = "10.10.4.60"
+  private_ip                 = "10.10.4.70"
   tags = merge (
     local.common_labels,
     {
@@ -432,86 +398,6 @@ resource "null_resource" "ansible_server" {
 
 
 
-
-
-
-
-
-
-#FOR AUTOMATION OF ANSIBLE WITH TERRAFORM
-#for Ansible Dynamic Inventory Creation
-
-# resource "null_resource" "loadbalancer" {
-
-# 	triggers = {
-# 		#mytest = timestamp()
-# 	}
-
-# 	provisioner "local-exec" {
-# 	    command = "echo ${module.load_balancer.id} ansible_host=${module.load_balancer.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=../ansible/keys/ansible/keys/lb-jumia-phone-validator.pem >> inventory"        
-           
-# 	  }
-# }
-
-# resource "null_resource" "application" {
-
-# 	triggers = {
-# 		#mytest = timestamp()
-# 	}
-
-# 	provisioner "local-exec" {
-# 	    command = "echo ${module.Application.id} ansible_host=${module.Application.public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=../ansible/keys/application-jumia-phone-validator.pem >> inventory"
-            
-           
-# 	  }
-# }
-
-# #Copy Dynamic inventory from local Workstation to the Ansible Server
-
-# resource "null_resource" "dynamicinventory" {
-
-# 	triggers = {
-# 		# mytest = timestamp()
-# 	}
-
-# 	provisioner "local-exec" {
-# 	    command = "scp -i ../ansible/keys/ansible-controller.pem inventory ubuntu@15.237.58.75:/tmp"
-      
-            
-# 	  }
-# 	depends_on = [ 
-# 			null_resource.application , null_resource.loadbalancer
-# 			]
-# }
-
-# #Login Remotely to the Ansible Server and and move the file to your own Custom Inventory location
-#  resource "null_resource" "ssh3" {
-#   provisioner "remote-exec" {
-#     connection {
-#       type        = "ssh"
-#       host        = module.ansible_controller.public_ip
-#       user        = "ubuntu"
-#       private_key = file("../ansible/keys/ansible-controller.pem")
-#     }
-
-#     inline = [
-#       # Remote-exec commands here
-#               "sudo chmod 777 /tmp/inventory",
-#               "sudo mv /tmp/inventory /etc/ansible/inventory",
-#     ]
-#   }
-
-#   #To RUN PLAYBOOK
-# 	# provisioner "local-exec" {
-# 	#   command = "ansible-playbook  -i ${module.ansible_controller.public_ip}, --private-key ${file("../ansible/keys/ansible-controller.pem")} nginx.yaml"
-              
-# 	#   }
-
-# # meta argument
-# 	depends_on = [ 
-# 			null_resource.application , null_resource.loadbalancer
-# 			]
-# }
 
 
 
