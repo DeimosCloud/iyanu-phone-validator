@@ -54,7 +54,6 @@
       community.general.ufw:
         rule: allow
         name: OpenSSH
-
     - name: Allow all access to tcp port 8081
       community.general.ufw:
         rule: allow
@@ -115,10 +114,9 @@
         repo: https://github.com/DeimosCloud/iyanu-phone-validator.git
         dest: /opt/app
 
-    # - name: Build and run the Docker container
-    #   command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose.yml up -d
+    - name: Build and run the Docker container
+      command: docker-compose -f /opt/app/jumia_phone_validator/docker-compose.yml up -d
 
-   
     # - name: "install httpd"
     #   package:
     #    name: "apache2"
